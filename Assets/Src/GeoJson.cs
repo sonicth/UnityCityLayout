@@ -12,10 +12,11 @@ using Newtonsoft.Json.Linq;
 using GeoJSON.Net.Feature;
 using GeoJSON.Net.Geometry;
 
-
+//TODO share with others
 using PolygonData = System.Tuple<
-						System.Collections.Generic.List<UnityEngine.Vector2[]>, 
-						string>;
+					System.Collections.Generic.List<UnityEngine.Vector2[]>,
+					string>;
+
 using PolygonInput = System.Tuple<
 						GeoJSON.Net.Geometry.Polygon, 
 						string>;

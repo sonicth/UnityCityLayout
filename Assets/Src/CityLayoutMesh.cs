@@ -1,6 +1,11 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+//TODO share with others!
+using PolygonData = System.Tuple<
+					System.Collections.Generic.List<UnityEngine.Vector2[]>,
+					string>;
+
 class CityLayoutMesh
 {
 
@@ -28,29 +33,44 @@ class CityLayoutMesh
 		return m;
 	}
 
-	private static Mesh GetTriangleMeshP2T(List<Vector2[]> poly_data)
+	private static Mesh GetTriangleMeshP2T(List<Vector2[]> poly_vertices)
 	{
-		var vxs = poly_data[0];
+		var num_rings = poly_vertices.Count;
+		if (num_rings == 0)
+			throw new System.Exception("should be at least one ring in a polygon to create a mesh!");
 
-		// 1. convert to P2T polygon format
-		var points = new List<Poly2Tri.PolygonPoint>(vxs.Length);
-
-		foreach (Vector2 vx in vxs)
+		// 1. convert rings to intermediate polygons
+		var polys = new List<Poly2Tri.Polygon>(num_rings);
+		foreach (var ring_vertices in poly_vertices)
 		{
-			//NOTE float -> double conversion
-			points.Add(new Poly2Tri.PolygonPoint((double) vx.x, (double) vx.y));
+			var points = new List<Poly2Tri.PolygonPoint>(ring_vertices.Length);
+
+			foreach (var vx in ring_vertices)
+			{
+				//NOTE float -> double conversion
+				points.Add(new Poly2Tri.PolygonPoint((double)vx.x, (double)vx.y));
+			}
+			polys.Add( new Poly2Tri.Polygon(points) );
 		}
-		var p2t_poly = new Poly2Tri.Polygon(points);
 
-		// 2. triangulate!
-		Poly2Tri.P2T.Triangulate(p2t_poly);
+		// 2. if there are more than one polygon, they are inner rings or holes!!
+		if (num_rings > 1)
+		{
+			for (int ri = 1; ri < num_rings; ++ri)
+			{
+				polys[0].AddHole(polys[ri]);
+			}
+		}
 
-		// 3. read triangle data
+		// 3. triangulate!
+		Poly2Tri.P2T.Triangulate(polys[0]);
+
+		// 4. read triangle data
 		//NOTE vertices are duplicated, e.g. each vertex to each index!
-		var tri_vxs = new Vector3[p2t_poly.Triangles.Count * 3];
-		var tri_ids = new int[p2t_poly.Triangles.Count * 3];
+		var tri_vxs = new Vector3[polys[0].Triangles.Count * 3];
+		var tri_ids = new int[polys[0].Triangles.Count * 3];
 		int i = 0;
-		foreach (var tri in p2t_poly.Triangles)
+		foreach (var tri in polys[0].Triangles)
 		{
 			tri_vxs[i + 0] = new Vector3(tri.Points[0].Xf, tri.Points[0].Yf, 0);
 			tri_vxs[i + 1] = new Vector3(tri.Points[2].Xf, tri.Points[2].Yf, 0);
@@ -63,7 +83,7 @@ class CityLayoutMesh
 			i += 3;
 		}
 
-		// 4. construct mesh using the generated triangles
+		// 5. construct mesh using the generated triangles
 		var m = new Mesh();
 		m.vertices = tri_vxs;
 		m.triangles = tri_ids;
@@ -75,19 +95,22 @@ class CityLayoutMesh
 
 
 
-	public static GameObject createMeshFromRingVertices(float r, List<Vector2[]> poly_data, string name)
+	public static GameObject createMeshFromRingVertices(float r, PolygonData poly_data)
 	{
-		var go = new GameObject();
+		var poly_vertices = poly_data.Item1;
+		var poly_name = poly_data.Item2;
+
+		var go = new GameObject(poly_name);
 		go.AddComponent<MeshFilter>();
 		go.AddComponent<MeshRenderer>();
 		// generate mesh	
 		try
 		{
-			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshP2T(poly_data);
+			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshP2T(poly_vertices);
 		} catch(System.SystemException e)
 		{
-			Debug.LogError("p2t failed on mesh: " + name+", \n\tmessage: ###"+e.Message + "###");
-			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshBasic(poly_data[0]);
+			Debug.LogError("p2t failed on mesh: " + poly_name + ", \n\tmessage: ###"+e.Message + "###");
+			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshBasic(poly_vertices[0]);
 		}
 
 		var s = Shader.Find("Standard");

@@ -42,7 +42,9 @@ public class CityLayoutTestController : MonoBehaviour {
 		var vxs = new Vector2[] { new Vector3(0, 0), new Vector3(0, r), new Vector3(r, r), new Vector3(r, 0) };
 
 		// create mesh
-		var tile = CityLayoutMesh.createMeshFromRingVertices(scale, new List<Vector2[]> { vxs }, "<square>");
+		var tile = CityLayoutMesh.createMeshFromRingVertices(
+			scale, 
+			new Tuple<List<Vector2[]>, string>(new List<Vector2[]> { vxs }, "<square>"));
 
 		// add locally
 		tiles = new List<GameObject>(1);
@@ -60,15 +62,11 @@ public class CityLayoutTestController : MonoBehaviour {
 		var polygon_dataset = GeoJson.GetPolygonDatasetFromSerialised(seralised_geometry);
 
 		// 3) create GameObjects with meshes from each polygon
-		//TODO single mesh/gameobject here...??
+		//TODO single gameobject/mesh here...??
 		tiles = new List<GameObject>(polygon_dataset.Count);
-		foreach (var entry in polygon_dataset)
+		foreach (var polygon_data in polygon_dataset)
 		{
-			var polygon_data = entry.Item1;
-			var name = entry.Item2;
-
-			var tile = CityLayoutMesh.createMeshFromRingVertices(scale, polygon_data, name);
-			tile.name = name;
+			var tile = CityLayoutMesh.createMeshFromRingVertices(scale, polygon_data);
 			tile.transform.parent = transform;
 			tiles.Add(tile);
 		}
