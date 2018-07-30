@@ -23,6 +23,14 @@ public class CameraController : MonoBehaviour
 	private bool wasZoomingLastFrame; // Touch mode only
 	private Vector2[] lastZoomPositions; // Touch mode only
 
+
+	readonly int PAN_BUTTON = 1;
+	readonly int SELECT_BUTTON = 0;
+
+	// picking
+	private GameObject picked = null;
+	private GameObject selected = null;
+
 	void Awake()
 	{
 		cam = GetComponent<Camera>();
@@ -89,22 +97,90 @@ public class CameraController : MonoBehaviour
 		}
 	}
 
+
 	void HandleMouse()
 	{
+		
 		// On mouse down, capture it's position.
 		// Otherwise, if the mouse is still down, pan the camera.
-		if (Input.GetMouseButtonDown(0))
+		if (Input.GetMouseButtonDown(PAN_BUTTON))
 		{
 			lastPanPosition = Input.mousePosition;
 		}
-		else if (Input.GetMouseButton(0))
+		else if (Input.GetMouseButton(PAN_BUTTON))
 		{
 			PanCamera(Input.mousePosition);
+		}
+		else if (Input.GetMouseButtonDown(SELECT_BUTTON))
+		{
+			if (picked)
+			{
+				//TODO
+				// select object
+				Debug.LogFormat("TODO select picked object <{0}>", picked.name);
+				selected = picked;
+			}
+			else
+			{
+				if (selected)
+				{
+					Debug.LogFormat("de-select object <{0}>", selected.name);
+					selected = null;
+				}
+				else
+					Debug.Log("noting selected!");
+			}
 		}
 
 		// Check for scrolling to zoom the camera
 		float scroll = Input.GetAxis("Mouse ScrollWheel");
 		ZoomCamera(scroll, ZoomSpeedMouse);
+
+		// pick object all the time!
+		PickObjects(Input.mousePosition);
+	}
+
+	void PickObjects(Vector3 position)
+	{
+		// prepare ray to cast based on the screen and mouse input
+		Ray ray = Camera.main.ScreenPointToRay(position);
+
+		RaycastHit hit;
+		GameObject to_unpick = null;
+		if (Physics.Raycast(ray, out hit))
+		{
+			// collided at hit.point
+
+			// a new different object hit!
+			if (picked != hit.collider.gameObject)
+			{
+				// unpick previoius object; can be null
+				to_unpick = picked;
+
+				// set new picked object!
+				picked = hit.collider.gameObject;
+
+				// highligh (select) picked object
+				CityLayoutMesh.highlightMesh(picked, true);
+			}
+			//else { Debug.Log("**same object hit!"); }
+		}
+		else
+		{
+			// de-highlight object
+			if (picked)
+			{
+				to_unpick = picked;
+				picked = null;
+			}
+			//else { Debug.Log("**nothing hit!"); }
+		}
+
+		if (to_unpick)
+		{
+			CityLayoutMesh.highlightMesh(to_unpick, false);
+			to_unpick = null;
+		}
 	}
 
 	void PanCamera(Vector3 newPanPosition)

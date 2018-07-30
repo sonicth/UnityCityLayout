@@ -93,8 +93,6 @@ class CityLayoutMesh
 		return m;
 	}
 
-
-
 	public static GameObject createMeshFromRingVertices(float r, PolygonData poly_data)
 	{
 		var poly_vertices = poly_data.Item1;
@@ -103,22 +101,51 @@ class CityLayoutMesh
 		var go = new GameObject(poly_name);
 		go.AddComponent<MeshFilter>();
 		go.AddComponent<MeshRenderer>();
+		// collider for raycasting
+		go.AddComponent<MeshCollider>();
+
+
 		// generate mesh	
+		Mesh mesh;
 		try
 		{
-			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshP2T(poly_vertices);
+			mesh = GetTriangleMeshP2T(poly_vertices);
 		} catch(System.SystemException e)
 		{
-			Debug.LogError("p2t failed on mesh: " + poly_name + ", \n\tmessage: ###"+e.Message + "###");
-			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshBasic(poly_vertices[0]);
+			Debug.LogWarning("p2t failed on mesh: " + poly_name + ", \n\tmessage: ###"+e.Message + "###");
+			mesh = GetTriangleMeshBasic(poly_vertices[0]);
 		}
+		go.GetComponent<MeshFilter>().mesh = mesh;
+
+
 
 		var s = Shader.Find("Standard");
 		go.GetComponent<MeshRenderer>().material = new Material(s);
 		// tilt to xz plane
 		go.transform.rotation = Quaternion.Euler(90, 0, 0);
 
+		// same collider mesh for raycasting
+		//NOTE needs to be last, EVEN after transforms!
+		go.GetComponent<MeshCollider>().sharedMesh = mesh;
+
 		return go;
+	}
+
+	public static void highlightMesh(GameObject go, bool is_selected)
+	{
+		//Debug.LogFormat("{1} object <{0}>", go.name, is_selected ? "highligting" : "de-selecting");
+
+		var mat = go.GetComponent<MeshRenderer>().material;
+		if (is_selected)
+		{
+			mat.color = new Color(0.9f, 0.5f, 0.6f);
+		}
+		else
+		{
+			mat.color = new Color(1, 1, 1);
+		}
+
+		
 	}
 }
 
