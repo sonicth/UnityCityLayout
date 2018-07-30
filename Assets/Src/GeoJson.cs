@@ -13,57 +13,54 @@ using GeoJSON.Net.Feature;
 using GeoJSON.Net.Geometry;
 
 
-using PolygonEntry = System.Tuple<UnityEngine.Vector2[], string>;
+using PolygonData = System.Tuple<
+						System.Collections.Generic.List<UnityEngine.Vector2[]>, 
+						string>;
+using PolygonInput = System.Tuple<
+						GeoJSON.Net.Geometry.Polygon, 
+						string>;
 
 class GeoJson
 {
 	
 
-	public static List<PolygonEntry> GetPolygonsFromSerialised(string seralised_geometry)
+	public static List<PolygonData> GetPolygonDatasetFromSerialised(string seralised_geometry)
 	{
-		// NOTE change var to dynamic
+		// parse Json into list of read-only features
 		var geo_features = JsonConvert.DeserializeObject<FeatureCollection>(seralised_geometry);
-		var f1 = geo_features.Features[0];
-		Debug.Log("number of features " + geo_features.Features.Count);
-
 
 		// train boundary
-		var bds = new FitBox(50);
-		bds.Update(IteratorVector2(geo_features.Features));
-		var scale = Math.Min(bds.Scale.x, bds.Scale.y);
-		var translate = bds.Translate;
-
-		var polygon_entries = new List<PolygonEntry>(geo_features.Features.Count);
-		// convert geo data to gameobjects
-		foreach (var poly_tuple in IteratorPoly(geo_features.Features))
+		var fit_box = new FitBox(50);
+		foreach (var vx in IteratorFeatureOuterVxs(geo_features.Features))
 		{
-			var poly = poly_tuple.Item1;
-			var poly_name = poly_tuple.Item2;
-
-			var l = PolyIteratorVector2(poly).ToList();
-			var vs_transformed = new Vector2[l.Count];
-			int i = 0;
-			foreach (var v in l)
-			{
-				vs_transformed[i] = (v + translate) * scale;
-				++i;
-			}
-
-			//var ls1 = poly.Coordinates[0] as LineString;
-			//var pt1 = ls1.Coordinates[0];
-			//ls1.Coordinates[0] = new Position(pt1.Latitude, pt1.Longitude);
-
-			polygon_entries.Add(new PolygonEntry(vs_transformed, poly_name));
+			fit_box.UpdateWithVertex(vx);
 		}
 
-		return polygon_entries;
+		// convert features to geometry data
+		var polygon_dataset = IteratorFeatureToPolygonData(geo_features.Features).ToList();
+		
+		// transform geometry data to scene coordinates
+		foreach (var poly_data in polygon_dataset)
+		{
+			foreach (var ring_data in poly_data.Item1)
+			{
+				var vxi = 0;
+				foreach (var vx in ring_data)
+				{
+					ring_data[vxi] = fit_box.TransformAffine(vx);
+					++vxi;
+				}
+			}
+		}
+
+		return polygon_dataset;
 	}
 
 
-	static IEnumerable<Vector2> PolyIteratorVector2(Polygon poly)
+
+	static private Vector2[] RingVectors(LineString ring)
 	{
-		// first linestring == outer ring?
-		var ring = poly.Coordinates[0];
+		var ring_vectors = new Vector2[ring.Coordinates.Count - 1];
 
 		int i = 0;
 		var last_i = ring.Coordinates.Count - 1;
@@ -73,24 +70,48 @@ class GeoJson
 			if (i == last_i)
 				break;
 
-			yield return new Vector2((float)coord.Longitude, (float)coord.Latitude);
+			ring_vectors[i] = new Vector2((float)coord.Longitude, (float)coord.Latitude);
 			++i;
 		}
+
+		return ring_vectors;
 	}
 
 
-	static IEnumerable<Vector2> IteratorVector2(List<Feature> features)
+	static IEnumerable<Vector2> IteratorFeatureOuterVxs(IEnumerable<Feature> features)
 	{
-		foreach (var poly_tuple in IteratorPoly(features))
+		foreach (var poly_data in IteratorFeatureToPolygonData(features))
 		{
-			foreach (var vx in PolyIteratorVector2(poly_tuple.Item1))
+			// take only the first ring!
+			var first_ring_vectors = poly_data.Item1[0];
+
+			foreach (var vx in first_ring_vectors)
 			{
 				yield return vx;
 			}
 		}
 	}
 
-	static IEnumerable<Tuple<Polygon, string>> IteratorPoly(List<Feature> features)
+	static IEnumerable<PolygonData> IteratorFeatureToPolygonData(IEnumerable<Feature> features)
+	{
+		foreach (var poly_input in IteratorFeatureToPolygonInput(features))
+		{
+			// first linestring == outer ring?
+			var num_rings = poly_input.Item1.Coordinates.Count;
+			var poly_vectors = new List<Vector2[]>(num_rings);
+			var poly_name = poly_input.Item2;
+
+			foreach (var ring in poly_input.Item1.Coordinates)
+			{
+				var ring_vectors = RingVectors(ring);
+				poly_vectors.Add(ring_vectors);
+			}
+			
+			yield return new PolygonData(poly_vectors, poly_name);
+		}
+	}
+
+	static IEnumerable<PolygonInput> IteratorFeatureToPolygonInput(IEnumerable<Feature> features)
 	{
 
 		int i = 0;
@@ -104,23 +125,23 @@ class GeoJson
 				// shape represented with multipolygon
 				var mpoly = (f.Geometry as MultiPolygon);
 
-				
-
-
 				// game object name
-				string poly_name = "shape_" + i.ToString("D6") + "_" + f.Properties["LU_DESC"] + "_" + f.Properties["OID_"];
+				string mpoly_name = "shape_" + i.ToString("D6") + "_" + f.Properties["LU_DESC"] + "_" + f.Properties["OID_"];
 
+				int pi = 0;
 				foreach (var poly in mpoly.Coordinates)
 				{
 					bool are_holes = poly.Coordinates.Count > 1;
 					if (!are_holes)
 						continue;
 
-					//Debug.Log("polygon rings: ***" + poly.Coordinates.Count.ToString());
+					// if there are multiple polygons in the set, add index prefix starting from the second one
+					var poly_name = mpoly_name + (i > 0 ? "_" + pi.ToString("D2") : "");
 
-
-					yield return new Tuple<Polygon, string>(poly, poly_name);
+					yield return new PolygonInput(poly, poly_name);
+					++pi;
 				}
+
 
 			}
 			else if (f.Geometry.Type == GeoJSON.Net.GeoJSONObjectType.Polygon)
@@ -130,7 +151,7 @@ class GeoJson
 					? ("polygon: " + f.Properties["name"]) 
 					: "<polygon>";
 
-				yield return new Tuple<Polygon, string>(poly, poly_name);
+				yield return new PolygonInput(poly, poly_name);
 			}
 			else
 			{
@@ -201,7 +222,8 @@ class GeoJson
 				});
 
 		var bds = new FitBox(10);
-		bds.Update(PolyIteratorVector2(poly));
+
+		//bds.Update(PolyIteratorVector2(poly));
 		//TODO poly object --> vec2 data --> gameobject
 	}
 

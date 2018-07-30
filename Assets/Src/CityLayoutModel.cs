@@ -3,10 +3,15 @@ class CityLayoutModel
 {
 	public static string GetSerialisedGeometry()
 	{
-		string filename;
-		
-		filename = "ShapeData/Example1.geojson";
-		//filename = "ShapeData/Parks.geojson";
+		string filename = "";
+
+		filename = "ShapeData/Parks.geojson";
+
+		// default shape file (in the repository!)
+		if (!System.IO.File.Exists(filename))
+		{
+			filename = "ShapeData/Example1.geojson";
+		}
 
 		if (!System.IO.File.Exists(filename))
 		{
@@ -14,9 +19,6 @@ class CityLayoutModel
 		}
 		else
 		{
-			// read text
-			//var geo_txt = File.ReadAllText(filename);
-
 			var file = new System.IO.StreamReader(filename);
 			string serialised_geometry = file.ReadToEnd();
 			file.Close();

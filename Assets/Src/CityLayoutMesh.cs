@@ -28,8 +28,10 @@ class CityLayoutMesh
 		return m;
 	}
 
-	private static Mesh GetTriangleMeshP2T(Vector2[] vxs)
-	{	
+	private static Mesh GetTriangleMeshP2T(List<Vector2[]> poly_data)
+	{
+		var vxs = poly_data[0];
+
 		// 1. convert to P2T polygon format
 		var points = new List<Poly2Tri.PolygonPoint>(vxs.Length);
 
@@ -73,7 +75,7 @@ class CityLayoutMesh
 
 
 
-	public static GameObject createMeshFromRingVertices(float r, Vector2[] vxs, string name)
+	public static GameObject createMeshFromRingVertices(float r, List<Vector2[]> poly_data, string name)
 	{
 		var go = new GameObject();
 		go.AddComponent<MeshFilter>();
@@ -81,11 +83,11 @@ class CityLayoutMesh
 		// generate mesh	
 		try
 		{
-			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshP2T(vxs);
+			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshP2T(poly_data);
 		} catch(System.SystemException e)
 		{
 			Debug.LogError("p2t failed on mesh: " + name+", \n\tmessage: ###"+e.Message + "###");
-			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshBasic(vxs);
+			go.GetComponent<MeshFilter>().mesh = GetTriangleMeshBasic(poly_data[0]);
 		}
 
 		var s = Shader.Find("Standard");

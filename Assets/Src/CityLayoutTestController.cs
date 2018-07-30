@@ -42,7 +42,7 @@ public class CityLayoutTestController : MonoBehaviour {
 		var vxs = new Vector2[] { new Vector3(0, 0), new Vector3(0, r), new Vector3(r, r), new Vector3(r, 0) };
 
 		// create mesh
-		var tile = CityLayoutMesh.createMeshFromRingVertices(scale, vxs, "<square>");
+		var tile = CityLayoutMesh.createMeshFromRingVertices(scale, new List<Vector2[]> { vxs }, "<square>");
 
 		// add locally
 		tiles = new List<GameObject>(1);
@@ -57,16 +57,17 @@ public class CityLayoutTestController : MonoBehaviour {
 		var seralised_geometry = CityLayoutModel.GetSerialisedGeometry();
 
 		// 2) read serialised geometry (e.g. GeoJson) into list/collection of Vector2[]
-		var polygon_entries = GeoJson.GetPolygonsFromSerialised(seralised_geometry);
+		var polygon_dataset = GeoJson.GetPolygonDatasetFromSerialised(seralised_geometry);
 
-		// 3) create GemeObjects with meshes from each polygon
-		tiles = new List<GameObject>(polygon_entries.Count);
-		foreach (var entry in polygon_entries)
+		// 3) create GameObjects with meshes from each polygon
+		//TODO single mesh/gameobject here...??
+		tiles = new List<GameObject>(polygon_dataset.Count);
+		foreach (var entry in polygon_dataset)
 		{
-			var vec2_array = entry.Item1;
+			var polygon_data = entry.Item1;
 			var name = entry.Item2;
 
-			var tile = CityLayoutMesh.createMeshFromRingVertices(scale, vec2_array, name);
+			var tile = CityLayoutMesh.createMeshFromRingVertices(scale, polygon_data, name);
 			tile.name = name;
 			tile.transform.parent = transform;
 			tiles.Add(tile);

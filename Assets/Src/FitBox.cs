@@ -43,18 +43,15 @@ public class FitBox
 		vmax = new Vector2(float.MinValue, float.MinValue);
 	}
 
-	public void Update(IEnumerable<Vector2> vxs)
+	public void UpdateWithVertex(Vector2 vx)
 	{
-		foreach (var pt in vxs)
-		{
-			vmin = Vector2.Min(vmin, pt);
-			vmax = Vector2.Max(vmax, pt);
-
-			vmin.x = Math.Min(vmin.x, pt.x);
-			vmin.y = Math.Min(vmin.y, pt.y);
-		}
-
+		vmin = Vector2.Min(vmin, vx);
+		vmax = Vector2.Max(vmax, vx);
 	}
 
-
+	internal Vector2 TransformAffine(Vector2 vx)
+	{
+		var scale = Math.Min(Scale.x, Scale.y);
+		return (vx + Translate) * scale;
+	}
 }
