@@ -3,11 +3,10 @@ class CityLayoutModel
 {
 	public static string GetSerialisedGeometry()
 	{
-		//var path = Directory.GetCurrentDirectory();
-		//Debug.Log("***current directory: " + path);
-
-		//var filename = "Assets/gj-test1.json";
-		var filename = "C:/Users/fish/Documents/jobs/eth-singapore/Parks.geojson";
+		string filename;
+		
+		filename = "ShapeData/Example1.geojson";
+		//filename = "ShapeData/Parks.geojson";
 
 		if (!System.IO.File.Exists(filename))
 		{

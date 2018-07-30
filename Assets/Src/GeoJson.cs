@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
-// needed for Vector2
+// needed for Vector2, Debug.*
 using UnityEngine;
 
 // GeoJson and dependencies
@@ -123,9 +123,18 @@ class GeoJson
 				}
 
 			}
+			else if (f.Geometry.Type == GeoJSON.Net.GeoJSONObjectType.Polygon)
+			{
+				var poly = (f.Geometry as Polygon);				
+				string poly_name = f.Properties.ContainsKey("name") 
+					? ("polygon: " + f.Properties["name"]) 
+					: "<polygon>";
+
+				yield return new Tuple<Polygon, string>(poly, poly_name);
+			}
 			else
 			{
-				throw new Exception("do not know how to handle geometry of type " + f.Geometry.Type.ToString()+", expected a multipolygon!");
+				Debug.LogWarningFormat("Ignoring shape of type <{0}>", f.Geometry.Type.ToString());
 			}
 
 			++i;
