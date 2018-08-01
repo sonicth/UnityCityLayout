@@ -33,7 +33,8 @@ public class CameraController : MonoBehaviour
 
 	void Awake()
 	{
-		cam = GetComponent<Camera>();
+		var cams = GetComponentsInChildren<Camera>();
+		cam = cams[0];
 	}
 
 	void Update()

@@ -26,8 +26,8 @@ public class GeoJson
 
 	enum PolygonsWithHoles { All, WithHolesOnly, WithoutHolesOnly };
 
-	private const int MAX_FEATURES_TO_READ = 128;
-	private const PolygonsWithHoles loadWithHoles = PolygonsWithHoles.WithHolesOnly;
+	private const int MAX_FEATURES_TO_READ = 400;
+	private const PolygonsWithHoles loadWithHoles = PolygonsWithHoles.All;
 	private const bool discardHoles = false;
 
 	public static List<PolygonData> GetPolygonDatasetFromSerialised(string seralised_geometry, float box_radius)
@@ -110,7 +110,7 @@ public class GeoJson
 			int ri = 0;
 			foreach (var ring in poly_input.Item1.Coordinates)
 			{
-				if (!discardHoles || ri == 0)
+				if (ri == 0 || !discardHoles)
 				{
 					var ring_vectors = RingVectors(ring);
 					poly_vectors.Add(ring_vectors);
@@ -138,16 +138,17 @@ public class GeoJson
 
 				// game object name
 				string mpoly_name = "shape_" + i.ToString("D6") + "_" + f.Properties["LU_DESC"] + "_" + f.Properties["OID_"];
-				Debug.LogFormat("mpoly has {0} parts", mpoly.Coordinates.Count);
 
 				int pi = 0;
 				foreach (var poly in mpoly.Coordinates)
 				{
 					bool are_holes = poly.Coordinates.Count > 1;
 
-					if ((loadWithHoles == PolygonsWithHoles.WithoutHolesOnly && are_holes)
-						|| (loadWithHoles == PolygonsWithHoles.WithHolesOnly && !are_holes))
+#pragma warning disable 0162
+					if ((are_holes && loadWithHoles == PolygonsWithHoles.WithoutHolesOnly)
+						|| (!are_holes && loadWithHoles == PolygonsWithHoles.WithHolesOnly))
 						continue;
+#pragma warning restore 0162
 
 					// if there are multiple polygons in the set, add index prefix starting from the second one
 					var poly_name = mpoly_name + (pi > 0 ? "_" + pi.ToString("D2") : "");
@@ -188,20 +189,10 @@ public class GeoJson
 		{
 			if (f.Geometry.Type == GeoJSON.Net.GeoJSONObjectType.Polygon)
 			{
-				//yield return ();
-				Polygon p = f.Geometry as Polygon;
 				foreach (var k in f.Properties.Keys)
 				{
 					Debug.Log("key: " + k + ", \tvalue: " + f.Properties[k].ToString());
 				}
-
-				//new Polygon(
-				//new List<LineString> { new LineString(new List<IPosition> {
-				//	new Position(10, 10),
-				//	new Position(11, 12),
-				//	new Position(10, 12),
-				//	new Position(10, 10),
-				//}) });
 			}
 
 		}
@@ -215,42 +206,9 @@ public class GeoJson
 	//
 	///  test stuff
 	//
-	void AddPolygon()
-	{
-		var offset = 0;
-		var poly = new Polygon(new List<LineString>
-				{
-					new LineString(new List<IPosition>
-					{
-						new Position(52.959676831105995 + offset, -2.6797102391514338 + offset),
-						new Position(52.9608756693609 + offset, -2.6769029474483279 + offset),
-						new Position(52.908449372833715 + offset, -2.6079763270327119 + offset),
-						new Position(52.891287242948195 + offset, -2.5815104708998668 + offset),
-						new Position(52.875476700983896 + offset, -2.5851645010668989 + offset),
-						new Position(52.882954723868622 + offset, -2.6050779098387191 + offset),
-						new Position(52.875255907042678 + offset, -2.6373482332006359 + offset),
-						new Position(52.878791122091066 + offset, -2.6932445076063951 + offset),
-						new Position(52.89564268523565 + offset, -2.6931334629377890 + offset),
-						new Position(52.930592009390175 + offset, -2.6548779332193022 + offset),
-						new Position(52.959676831105995 + offset, -2.6797102391514338 + offset)
-					})
-				});
-
-		var bds = new FitBox(10);
-
-		//bds.Update(PolyIteratorVector2(poly));
-		//TODO poly object --> vec2 data --> gameobject
-	}
 
 	public static void TestConversion()
 	{
-		string json = "{\"coordinates\":[-2.124156,51.899523],\"type\":\"Point\"}";
-
-		//var conv = new GeoJSON.Net.Converters.GeoJsonConverter[] { new GeoJSON.Net.Converters.GeoJsonConverter() };
-		//Debug.Log("can write " + conv[0].CanWrite.ToString() + ", can read " + conv[0].CanRead.ToString());
-
-		//Point point = JsonConvert.DeserializeObject<Point>(json);
-		Point point = new Point(new Position(0, 0));
 		var offset = 0;
 		LineString ls = new LineString(
 			new List<IPosition>
@@ -261,28 +219,10 @@ public class GeoJson
 						new Position(52.959676831105995 + offset, -2.6797102391514338 + offset),
 					}
 			);
-
-		//NOTE this works!
-		//var stuff = JObject.Parse(json);
-		//stuff["type"] = "Fish";
-
-		//var out_json = stuff.ToString();
-		//Debug.Log(out_json);
-
-		Polygon p;
-		//p.Coordinates
-		Position position = new Position(51.899523, -2.124156);
-
-		//var features = new List<Feature> { new Feature(point) };
-		//var pt = (features[0].Geometry as Point);
-		//Point;
-		//features[0].Geometry = p;
 		var fcol = new FeatureCollection();
 		var fitem = new Feature(ls);
 		fcol.Features.Add(fitem);
 		fcol.Features.Clear();
 
-		//Point point = new Point(position);
-		//string json = JsonConvert.SerializeObject(point);
 	}
 }

@@ -82,9 +82,6 @@ public class CityLayoutTestController : MonoBehaviour {
 			tile.transform.parent = transform;
 			tiles.Add(tile);
 		}
-
-		var _dummy = 0xf154;
-
 	}
 
 

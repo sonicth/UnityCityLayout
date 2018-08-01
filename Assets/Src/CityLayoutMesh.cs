@@ -9,6 +9,7 @@ using PolygonData = System.Tuple<
 
 class CityLayoutMesh
 {
+	private const float LINE_WIDTH = 0.25f;
 
 	private static Mesh GetTriangleMeshBasic(Vector2[] vxs)
 	{
@@ -207,7 +208,8 @@ class CityLayoutMesh
 		var vxs3d = System.Array.ConvertAll<Vector2, Vector3>(poly_vertices[0], v => new Vector3(v.x, 0, v.y));
 		lrenderer.positionCount = vxs3d.Length;
 		lrenderer.SetPositions(vxs3d);
-		lrenderer.SetWidth(0.25f, 0.25f);
+		lrenderer.startWidth = LINE_WIDTH;
+		lrenderer.endWidth = LINE_WIDTH;
 
 		var s = Shader.Find("Standard");
 		lrenderer.material = new Material(s);
