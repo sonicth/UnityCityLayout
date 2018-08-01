@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using TriangleNet.Geometry;
 using UnityEngine;
 
 //TODO share with others!
@@ -93,7 +94,70 @@ class CityLayoutMesh
 		return m;
 	}
 
-	public static GameObject createMeshFromRingVertices(float r, PolygonData poly_data)
+	private static Mesh GetTriangleDotNetMesh(List<Vector2[]> poly_vertices)
+	{
+		var num_vxs = 0;
+		foreach (var ring_vxs in poly_vertices)
+		{ num_vxs += ring_vxs.Length + 1; }
+
+		var poly = new TriangleNet.Geometry.Polygon(num_vxs);
+
+		// set vertices
+		var ri = 0;
+		foreach (var ring_vxs in poly_vertices)
+		{
+			var vxs_input = new List<TriangleNet.Geometry.Vertex>(ring_vxs.Length + 1);
+			foreach (var vx in ring_vxs)
+			{
+				vxs_input.Add(new TriangleNet.Geometry.Vertex(vx.x, vx.y));
+			}
+
+			// add to poly
+			bool is_hole = ri != 0;
+			var contour = new TriangleNet.Geometry.Contour(vxs_input);
+			poly.Add(contour, is_hole);
+			++ri;
+		}
+
+		// triangulate
+		var opts = new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true };
+		var tn_mesh = (TriangleNet.Mesh) poly.Triangulate(opts);
+
+		// write
+		var tri_vxs = new Vector3[tn_mesh.Triangles.Count * 3];
+		var tri_ids = new int[tn_mesh.Triangles.Count * 3];
+		int i = 0;
+		foreach (var tri in tn_mesh.Triangles)
+		{
+
+			tri_vxs[i + 0] = new Vector3((float)tri.GetVertex(0).x, (float)tri.GetVertex(0).y, 0);
+			tri_vxs[i + 1] = new Vector3((float)tri.GetVertex(2).x, (float)tri.GetVertex(2).y, 0);
+			tri_vxs[i + 2] = new Vector3((float)tri.GetVertex(1).x, (float)tri.GetVertex(1).y, 0);
+
+			tri_ids[i + 0] = i + 0;
+			tri_ids[i + 1] = i + 1;
+			tri_ids[i + 2] = i + 2;
+
+			i += 3;
+		}
+
+		// create mesh
+		var m = new Mesh();
+
+		// assign to mesh
+		m.vertices = tri_vxs;
+		m.triangles = tri_ids;
+
+		// recompute geometry
+		// QUESTION why do we need bounds?
+		m.RecalculateNormals();
+		m.RecalculateBounds();
+
+		return m;
+
+	}
+
+	public static GameObject createMeshFromPolygonData(PolygonData poly_data)
 	{
 		var poly_vertices = poly_data.Item1;
 		var poly_name = poly_data.Item2;
@@ -109,7 +173,8 @@ class CityLayoutMesh
 		Mesh mesh;
 		try
 		{
-			mesh = GetTriangleMeshP2T(poly_vertices);
+			//mesh = GetTriangleMeshP2T(poly_vertices);
+			mesh = GetTriangleDotNetMesh(poly_vertices);
 		} catch(System.SystemException e)
 		{
 			Debug.LogWarning("p2t failed on mesh: " + poly_name + ", \n\tmessage: ###"+e.Message + "###");
@@ -127,6 +192,28 @@ class CityLayoutMesh
 		// same collider mesh for raycasting
 		//NOTE needs to be last, EVEN after transforms!
 		go.GetComponent<MeshCollider>().sharedMesh = mesh;
+
+		return go;
+	}
+
+	public static GameObject createLinesFromPolygonData(PolygonData poly_data)
+	{
+		var poly_vertices = poly_data.Item1;
+		var poly_name = poly_data.Item2;
+
+		var go = new GameObject(poly_name);
+		var lrenderer = go.AddComponent<LineRenderer>();
+
+		var vxs3d = System.Array.ConvertAll<Vector2, Vector3>(poly_vertices[0], v => new Vector3(v.x, 0, v.y));
+		lrenderer.positionCount = vxs3d.Length;
+		lrenderer.SetPositions(vxs3d);
+		lrenderer.SetWidth(0.25f, 0.25f);
+
+		var s = Shader.Find("Standard");
+		lrenderer.material = new Material(s);
+		// tilt to xz plane
+		go.transform.rotation = Quaternion.Euler(90, 0, 0);
+
 
 		return go;
 	}

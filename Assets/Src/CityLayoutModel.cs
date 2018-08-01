@@ -5,7 +5,8 @@ class CityLayoutModel
 	{
 		string filename = "";
 
-		//filename = "ShapeData/Parks.geojson";
+		filename = "ShapeData/Parks.geojson";
+		//filename = "ShapeData/Feature_88621.geojson";
 
 		// default shape file (in the repository!)
 		if (!System.IO.File.Exists(filename))

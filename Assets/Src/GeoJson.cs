@@ -21,17 +21,22 @@ using PolygonInput = System.Tuple<
 						GeoJSON.Net.Geometry.Polygon, 
 						string>;
 
-class GeoJson
+public class GeoJson
 {
-	
 
-	public static List<PolygonData> GetPolygonDatasetFromSerialised(string seralised_geometry)
+	enum PolygonsWithHoles { All, WithHolesOnly, WithoutHolesOnly };
+
+	private const int MAX_FEATURES_TO_READ = 128;
+	private const PolygonsWithHoles loadWithHoles = PolygonsWithHoles.WithHolesOnly;
+	private const bool discardHoles = false;
+
+	public static List<PolygonData> GetPolygonDatasetFromSerialised(string seralised_geometry, float box_radius)
 	{
 		// parse Json into list of read-only features
 		var geo_features = JsonConvert.DeserializeObject<FeatureCollection>(seralised_geometry);
 
 		// train boundary
-		var fit_box = new FitBox(50);
+		var fit_box = new FitBox(box_radius);
 		foreach (var vx in IteratorFeatureOuterVxs(geo_features.Features))
 		{
 			fit_box.UpdateWithVertex(vx);
@@ -57,18 +62,18 @@ class GeoJson
 		return polygon_dataset;
 	}
 
-
+	readonly static bool STRIP_LAST_RING_VERTEX = false;
 
 	static private Vector2[] RingVectors(LineString ring)
 	{
-		var ring_vectors = new Vector2[ring.Coordinates.Count - 1];
+		var ring_vectors = new Vector2[ring.Coordinates.Count];
 
 		int i = 0;
 		var last_i = ring.Coordinates.Count - 1;
 		foreach (var coord in ring.Coordinates)
 		{
 			// eat last vertex since the polygon is 'closed' automatically 
-			if (i == last_i)
+			if (i == last_i && STRIP_LAST_RING_VERTEX)
 				break;
 
 			ring_vectors[i] = new Vector2((float)coord.Longitude, (float)coord.Latitude);
@@ -102,10 +107,15 @@ class GeoJson
 			var poly_vectors = new List<Vector2[]>(num_rings);
 			var poly_name = poly_input.Item2;
 
+			int ri = 0;
 			foreach (var ring in poly_input.Item1.Coordinates)
 			{
-				var ring_vectors = RingVectors(ring);
-				poly_vectors.Add(ring_vectors);
+				if (!discardHoles || ri == 0)
+				{
+					var ring_vectors = RingVectors(ring);
+					poly_vectors.Add(ring_vectors);
+				}
+				++ri;
 			}
 			
 			yield return new PolygonData(poly_vectors, poly_name);
@@ -118,7 +128,7 @@ class GeoJson
 		int i = 0;
 		foreach (var f in features)
 		{
-			if (i > 200000)
+			if (i >= MAX_FEATURES_TO_READ)
 				break;
 
 			if (f.Geometry.Type == GeoJSON.Net.GeoJSONObjectType.MultiPolygon)
@@ -128,16 +138,19 @@ class GeoJson
 
 				// game object name
 				string mpoly_name = "shape_" + i.ToString("D6") + "_" + f.Properties["LU_DESC"] + "_" + f.Properties["OID_"];
+				Debug.LogFormat("mpoly has {0} parts", mpoly.Coordinates.Count);
 
 				int pi = 0;
 				foreach (var poly in mpoly.Coordinates)
 				{
 					bool are_holes = poly.Coordinates.Count > 1;
-					if (!are_holes)
+
+					if ((loadWithHoles == PolygonsWithHoles.WithoutHolesOnly && are_holes)
+						|| (loadWithHoles == PolygonsWithHoles.WithHolesOnly && !are_holes))
 						continue;
 
 					// if there are multiple polygons in the set, add index prefix starting from the second one
-					var poly_name = mpoly_name + (i > 0 ? "_" + pi.ToString("D2") : "");
+					var poly_name = mpoly_name + (pi > 0 ? "_" + pi.ToString("D2") : "");
 
 					yield return new PolygonInput(poly, poly_name);
 					++pi;
@@ -145,6 +158,7 @@ class GeoJson
 
 
 			}
+			// NOTE a single polygon feature for debugging purposes; normally expect only multipolygons in the input.
 			else if (f.Geometry.Type == GeoJSON.Net.GeoJSONObjectType.Polygon)
 			{
 				var poly = (f.Geometry as Polygon);				
