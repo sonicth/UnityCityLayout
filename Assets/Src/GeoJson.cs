@@ -26,7 +26,7 @@ public class GeoJson
 
 	enum PolygonsWithHoles { All, WithHolesOnly, WithoutHolesOnly };
 
-	private const int MAX_FEATURES_TO_READ = 400;
+	private const int MAX_FEATURES_TO_READ = 400000;
 	private const PolygonsWithHoles loadWithHoles = PolygonsWithHoles.All;
 	private const bool discardHoles = false;
 

@@ -15,7 +15,7 @@ public class CityLayoutTestController : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 
-		AddGeoJsonGeometry(tiles);
+		StartCoroutine("AddGeoJsonGeometry", this);
 		//void AddSquare();
 		//GeoJson.TestConversion();
 	}
@@ -57,17 +57,20 @@ public class CityLayoutTestController : MonoBehaviour {
 
 
 
-	void AddGeoJsonGeometry(List<GameObject> tiles)
+	IEnumerator AddGeoJsonGeometry()
 	{
 		// 1) get serialised textual geometry data (e.g. read from file)
 		var seralised_geometry = CityLayoutModel.GetSerialisedGeometry();
 
 		// 2) read serialised geometry (e.g. GeoJson) into list/collection of Vector2[]
 		var polygon_dataset = GeoJson.GetPolygonDatasetFromSerialised(seralised_geometry, BOX_RADIUS);
+		yield return null;
 
 		// 3) create GameObjects with meshes from each polygon
 		//TODO single gameobject/mesh here...??
 		tiles = new List<GameObject>(polygon_dataset.Count);
+		var yield_counter = 0;
+		const int UNITS_PER_YIELD = 128;
 		foreach (var polygon_data in polygon_dataset)
 		{
 			GameObject tile;
@@ -81,7 +84,12 @@ public class CityLayoutTestController : MonoBehaviour {
 			}
 			tile.transform.parent = transform;
 			tiles.Add(tile);
+
+			++yield_counter;
+			if (yield_counter >= UNITS_PER_YIELD)
+				yield return null;
 		}
+		yield return null;
 	}
 
 
