@@ -70,7 +70,7 @@ public class CityLayoutTestController : MonoBehaviour {
 		//TODO single gameobject/mesh here...??
 		tiles = new List<GameObject>(polygon_dataset.Count);
 		var yield_counter = 0;
-		const int UNITS_PER_YIELD = 128;
+		const int UNITS_PER_YIELD = 64;
 		foreach (var polygon_data in polygon_dataset)
 		{
 			GameObject tile;
@@ -87,7 +87,10 @@ public class CityLayoutTestController : MonoBehaviour {
 
 			++yield_counter;
 			if (yield_counter >= UNITS_PER_YIELD)
+			{
+				yield_counter = 0;
 				yield return null;
+			}
 		}
 		yield return null;
 	}
