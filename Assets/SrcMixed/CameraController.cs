@@ -7,7 +7,7 @@ using System.Collections;
 public class CameraController : MonoBehaviour
 {
 
-	private static readonly float PanSpeed = 100f;
+	private static readonly float PanSpeed = 1;
 	private static readonly float ZoomSpeedTouch = 2.0f;
 	private static readonly float ZoomSpeedMouse = 50.0f;
 
@@ -193,7 +193,15 @@ public class CameraController : MonoBehaviour
 	void PanCamera(Vector3 newPanPosition)
 	{
 		// Determine how much to move the camera
-		Vector3 offset = cam.ScreenToViewportPoint(lastPanPosition - newPanPosition);
+		var pan_change = lastPanPosition - newPanPosition;
+
+		// convert to screen to viewport, e.g. for hd: [0, 1920]x[0, 1080] --> [0, 1]x[0, 1]
+		Vector3 offset = cam.ScreenToViewportPoint(pan_change);
+
+		// convert viewport to world; since ortho camera height is half of the world, scale x appropriately
+		offset = Vector3.Scale(offset, new Vector3(cam.aspect, 1.0f, 0) * cam.orthographicSize * 2);
+
+		//var offset = pan_change;
 		Vector3 move = new Vector3(offset.x * PanSpeed, 0, offset.y * PanSpeed);
 
 		// Perform the movement
