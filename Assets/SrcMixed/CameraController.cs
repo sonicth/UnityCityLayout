@@ -31,12 +31,34 @@ public class CameraController : MonoBehaviour
 	private GameObject picked = null;
 	private GameObject selected = null;
 
+
+	public CityLayoutTestController scene_controller = null;
+
+	// Scale from pixels to world
+	public float PixToWorld = 0;
+
+	public GameObject Picked
+	{
+		get
+		{
+			return picked;
+		}
+	}
+
+	public GameObject Selected
+	{
+		get
+		{
+			return selected;
+		}
+	}
+
 	void Awake()
 	{
 		var cams = GetComponentsInChildren<Camera>();
 		cam = cams[0];
 
-		updatePixToWorldScale();
+		UpdatePixToWorldScale();
 	}
 
 	void Update()
@@ -120,18 +142,18 @@ public class CameraController : MonoBehaviour
 			{
 				// de-select any existing object
 				if (selected)
-					CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Normal);
+					CityLayoutMesh.highlightShape(selected, CityLayoutMesh.PickingState.Normal, PixToWorld);
 
 				// select the curently picked object
 				selected = picked;
-				CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Selected);
+				CityLayoutMesh.highlightShape(selected, CityLayoutMesh.PickingState.Selected, PixToWorld);
 			}
 			else
 			{
 				if (selected)
 				{
 					// deselect object
-					CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Normal);
+					CityLayoutMesh.highlightShape(selected, CityLayoutMesh.PickingState.Normal, PixToWorld);
 					selected = null;
 					
 				}
@@ -168,7 +190,7 @@ public class CameraController : MonoBehaviour
 
 				// highligh (select) picked object
 				if (picked != selected)
-					CityLayoutMesh.highlightMesh(picked, CityLayoutMesh.PickingState.Picking);
+					CityLayoutMesh.highlightShape(picked, CityLayoutMesh.PickingState.Picking, PixToWorld);
 			}
 			//else { Debug.Log("**same object hit!"); }
 		}
@@ -186,11 +208,17 @@ public class CameraController : MonoBehaviour
 		if (to_unpick)
 		{
 			if (to_unpick != selected)
-				CityLayoutMesh.highlightMesh(to_unpick, CityLayoutMesh.PickingState.Normal);
+				CityLayoutMesh.highlightShape(to_unpick, CityLayoutMesh.PickingState.Normal, PixToWorld);
 
 			to_unpick = null;
 		}
 	}
+
+	private void UpdatePixToWorldScale()
+	{
+		PixToWorld = 2 * cam.orthographicSize / (float)Screen.height;
+	}
+
 
 	void PanCamera(Vector3 newPanPosition)
 	{
@@ -199,10 +227,10 @@ public class CameraController : MonoBehaviour
 
 		// update screen to world scale
 		// NOTE this needed (besides the update at the start and during a zoom event) since screen resolution listener is too complex
-		updatePixToWorldScale();
+		UpdatePixToWorldScale();
 
 		// convert to screen change to world change
-		Vector3 offset = pan_change * _pix_to_world;
+		Vector3 offset = pan_change * PixToWorld;
 
 		//var offset = pan_change;
 		Vector3 move = new Vector3(offset.x * PanSpeed, 0, offset.y * PanSpeed);
@@ -221,12 +249,6 @@ public class CameraController : MonoBehaviour
 		lastPanPosition = newPanPosition;
 	}
 
-	private float _pix_to_world = 0;
-	private void updatePixToWorldScale()
-	{
-		_pix_to_world =  2 * cam.orthographicSize / (float)Screen.height;
-	}
-
 
 	void ZoomCamera(float offset, float speed)
 	{
@@ -237,7 +259,10 @@ public class CameraController : MonoBehaviour
 
 		var size_change = speed * (cam.orthographicSize / ZoomBounds[1]);
 		cam.orthographicSize = Mathf.Clamp(cam.orthographicSize - (offset * size_change), ZoomBounds[0], ZoomBounds[1]);
-		updatePixToWorldScale();
+		UpdatePixToWorldScale();
+
+		if (scene_controller)
+			StartCoroutine(scene_controller.UpdateLines());
 
 		// DONT care for perspective!
 		//cam.fieldOfView = Mathf.Clamp(cam.fieldOfView - (offset * speed), ZoomBounds[0], ZoomBounds[1]);

@@ -1,19 +1,25 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TriangleNet.Geometry;
 using UnityEngine;
 
 //TODO share with others!
 using PolygonData = System.Tuple<
-					System.Collections.Generic.List<UnityEngine.Vector2[]>,
-					string>;
+						System.Collections.Generic.List<UnityEngine.Vector2[]>,
+						string>;
+
+using ShapeColors = System.Tuple<
+						UnityEngine.Color,
+						UnityEngine.Color
+						>;
 
 class CityLayoutMesh
 {
 	// line drawing config
-	private const float LINE_WIDTH_DEFAULT = 0.25f;
-	private const float LINE_WIDTH_SELECTED = 0.75f;
+	private const float LINE_WIDTH_DEFAULT = 2f;
+	private const float LINE_WIDTH_SELECTED = 8f;
 	enum ELineDrawing { None, All, SelectedOnly };
-	private const ELineDrawing LINE_DRAWING = ELineDrawing.None;
+	private const ELineDrawing LINE_DRAWING = ELineDrawing.All;
 
 	public static readonly Color colorDefault = new Color(0.0452f, 0.6376f, 0.0613f);
 	public static readonly Color colorDefaultLine = new Color(0.1f, 0.1f, 0.1f);
@@ -223,19 +229,10 @@ class CityLayoutMesh
 			{
 				var line_object = createLinesFromPolygonData(ring_vertices, ri, shader);
 				line_object.transform.parent = go.transform;
-
-				// disable unselected lines
-				if (LINE_DRAWING == ELineDrawing.SelectedOnly)
-				{
-					line_object.SetActive(false);
-				}
 				++ri;
 			}
 		}
 #pragma warning restore 0162
-
-		highlightMesh(go, PickingState.Normal);
-
 		return go;
 	}
 
@@ -248,46 +245,37 @@ class CityLayoutMesh
 		var vxs3d = System.Array.ConvertAll<Vector2, Vector3>(ring_vertices, v => new Vector3(v.x, -0.01f, v.y));
 		lrenderer.positionCount = vxs3d.Length;
 		lrenderer.SetPositions(vxs3d);
-		lrenderer.startWidth = LINE_WIDTH_DEFAULT;
-		lrenderer.endWidth = LINE_WIDTH_DEFAULT;
+		
+		// start with zero width lines to begin with (updated later!)
+		lrenderer.startWidth = 0;
+		lrenderer.endWidth = 0;
+
 		lrenderer.loop = true;
 		lrenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 		lrenderer.material = new Material(shader);
 		return go;
 	}
 
-
-
-	public static void highlightMesh(GameObject go, PickingState state)
+	private static ShapeColors getColors(PickingState state)
 	{
-		//Debug.LogFormat("{1} object <{0}>", go.name, is_selected ? "highligting" : "de-selecting");
-		
-
-		Color region_color;
-		Color line_color;
-		float line_width = LINE_WIDTH_DEFAULT;
-
 		switch (state)
 		{
 			case PickingState.Picking:
-				region_color = colorPicking;
-				line_color = colorPickingLine;
-				break;
+				return new ShapeColors(colorPicking, colorPickingLine);
 
 			case PickingState.Selected:
-				region_color = colorSelected;
-				line_color = colorSelectedLine;
-				line_width = LINE_WIDTH_SELECTED;
-				break;
+				return new ShapeColors(colorSelected, colorSelectedLine);
 
 			case PickingState.Normal:
 			default:
-				region_color = colorDefault;
-				line_color = colorDefaultLine;
-				break;
+				return new ShapeColors(colorDefault, colorDefaultLine);
 		}
+	}
 
-		go.GetComponent<MeshRenderer>().material.color = region_color;
+	public static void updateShapeLines(GameObject go, PickingState state, float pix_to_world_scale)
+	{
+		Color line_color = getColors(state).Item2;
+		float line_width = (state == PickingState.Selected ? LINE_WIDTH_SELECTED : LINE_WIDTH_DEFAULT) * pix_to_world_scale;
 
 #pragma warning disable 0162
 		if (LINE_DRAWING != ELineDrawing.None)
@@ -311,6 +299,16 @@ class CityLayoutMesh
 			}
 		}
 #pragma warning restore 0162
+
+	}
+
+	public static void highlightShape(GameObject go, PickingState state, float pix_to_world_scale)
+	{
+		// get colours
+		Color region_color = getColors(state).Item1;
+		go.GetComponent<MeshRenderer>().material.color = region_color;
+
+		updateShapeLines(go, state, pix_to_world_scale);
 	}
 
 

@@ -7,10 +7,11 @@ using System.Linq;
 public class CityLayoutTestController : MonoBehaviour {
 
 	int updates = 0;
-	private List<GameObject> tiles;
+	private List<GameObject> shapes;
 
 	public readonly float BOX_RADIUS = 50;
 	private readonly bool enable_lighting = true;
+	private CameraController cam_controller = null;
 
 	private void Awake()
 	{
@@ -27,10 +28,11 @@ public class CityLayoutTestController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+		cam_controller = FindObjectOfType<CameraController>();
+		cam_controller.scene_controller = this;
 
+		// start reading gometry
 		StartCoroutine("AddGeoJsonGeometry", this);
-		//void AddSquare();
-		//GeoJson.TestConversion();
 	}
 
 
@@ -51,7 +53,7 @@ public class CityLayoutTestController : MonoBehaviour {
 		}
 	}
 
-	void AddSquare()
+	void AddSquareTest()
 	{		
 		// get data
 		var r = BOX_RADIUS * 0.5f;
@@ -60,13 +62,14 @@ public class CityLayoutTestController : MonoBehaviour {
 		// create mesh
 		var tile = CityLayoutMesh.createMeshFromPolygonData(
 			new Tuple<List<Vector2[]>, string>
-				(new List<Vector2[]> { vxs }, "<square>"),
+				(new List<Vector2[]> { vxs }, 
+				"<square>"),
 			enable_lighting);
 
 		// add locally
-		tiles = new List<GameObject>(1);
+		shapes = new List<GameObject>(1);
 		tile.transform.parent = transform;
-		tiles.Add(tile);
+		shapes.Add(tile);
 	}
 
 
@@ -82,7 +85,7 @@ public class CityLayoutTestController : MonoBehaviour {
 
 		// 3) create GameObjects with meshes from each polygon
 		//TODO single gameobject/mesh here...??
-		tiles = new List<GameObject>(polygon_dataset.Count);
+		shapes = new List<GameObject>(polygon_dataset.Count);
 		var yield_counter = 0;
 		const int UNITS_PER_YIELD = 64;
 		foreach (var polygon_data in polygon_dataset)
@@ -90,7 +93,7 @@ public class CityLayoutTestController : MonoBehaviour {
 			GameObject tile;
 			tile = CityLayoutMesh.createMeshFromPolygonData(polygon_data, enable_lighting);
 			tile.transform.parent = transform;
-			tiles.Add(tile);
+			shapes.Add(tile);
 
 			++yield_counter;
 			if (yield_counter >= UNITS_PER_YIELD)
@@ -99,8 +102,36 @@ public class CityLayoutTestController : MonoBehaviour {
 				yield return null;
 			}
 		}
+
+
+		yield return UpdateShapeState(cam_controller.PixToWorld);
+	}
+
+	public IEnumerator UpdateLines()
+	{
+		float pix_to_world_scale = cam_controller.PixToWorld;
+		foreach(var shape_go in shapes)
+		{
+			if (shape_go == cam_controller.Selected)
+				CityLayoutMesh.updateShapeLines(shape_go, CityLayoutMesh.PickingState.Selected, pix_to_world_scale);
+			else if (shape_go == cam_controller.Picked)
+				CityLayoutMesh.updateShapeLines(shape_go, CityLayoutMesh.PickingState.Picking, pix_to_world_scale);
+			else
+				CityLayoutMesh.updateShapeLines(shape_go, CityLayoutMesh.PickingState.Normal, pix_to_world_scale);
+		}
+
 		yield return null;
 	}
 
+	IEnumerator UpdateShapeState(float pix_to_world_scale)
+	{
+		foreach (var shape_go in shapes)
+		{
+			CityLayoutMesh.highlightShape(shape_go, CityLayoutMesh.PickingState.Normal, pix_to_world_scale);
+			//CityLayoutMesh.updateShapeLines(tile_go, CityLayoutMesh.PickingState.Normal, pix_to_world_scale);
+		}
+
+		yield return null;
+	}
 
 }
