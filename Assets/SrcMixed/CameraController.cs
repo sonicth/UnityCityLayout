@@ -116,13 +116,11 @@ public class CameraController : MonoBehaviour
 		{
 			if (picked)
 			{
-				//TODO
-				// select object
-				Debug.LogFormat("TODO select picked object <{0}>", picked.name);
-
+				// de-select any existing object
 				if (selected)
 					CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Normal);
 
+				// select the curently picked object
 				selected = picked;
 				CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Selected);
 			}
@@ -130,13 +128,11 @@ public class CameraController : MonoBehaviour
 			{
 				if (selected)
 				{
-					Debug.LogFormat("de-select object <{0}>", selected.name);
+					// deselect object
 					CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Normal);
 					selected = null;
 					
 				}
-				else
-					Debug.Log("noting selected!");
 			}
 		}
 

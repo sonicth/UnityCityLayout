@@ -9,8 +9,11 @@ using PolygonData = System.Tuple<
 
 class CityLayoutMesh
 {
-	private const float LINE_WIDTH = 0.25f;
-	private const bool CREATE_LINE = true;
+	// line drawing config
+	private const float LINE_WIDTH_DEFAULT = 0.25f;
+	private const float LINE_WIDTH_SELECTED = 0.75f;
+	enum ELineDrawing { None, All, SelectedOnly };
+	private const ELineDrawing LINE_DRAWING = ELineDrawing.None;
 
 	public static readonly Color colorDefault = new Color(0.0452f, 0.6376f, 0.0613f);
 	public static readonly Color colorDefaultLine = new Color(0.1f, 0.1f, 0.1f);
@@ -20,6 +23,8 @@ class CityLayoutMesh
 
 	public static readonly Color colorSelected = new Color(0.3419f, 0.1384f, 0.0168f);
 	public static readonly Color colorSelectedLine = new Color(1, 0, 0);
+
+
 
 
 	public enum PickingState { Normal, Picking, Selected };
@@ -171,7 +176,7 @@ class CityLayoutMesh
 
 	}
 
-	public static GameObject createMeshFromPolygonData(PolygonData poly_data)
+	public static GameObject createMeshFromPolygonData(PolygonData poly_data, bool enable_lighting)
 	{
 		var poly_vertices = poly_data.Item1;
 		var poly_name = poly_data.Item2;
@@ -196,10 +201,12 @@ class CityLayoutMesh
 		}
 		go.GetComponent<MeshFilter>().mesh = mesh;
 
+		// standart or unlit shader
+		Shader shader = enable_lighting 
+			? Shader.Find("Standard")
+			: Shader.Find("Unlit/Color");
 
-
-		var s = Shader.Find("Standard");
-		go.GetComponent<MeshRenderer>().material = new Material(s);
+		go.GetComponent<MeshRenderer>().material = new Material(shader);
 		
 		// tilt to xz plane
 		go.transform.rotation = Quaternion.Euler(90, 0, 0);
@@ -209,13 +216,19 @@ class CityLayoutMesh
 		go.GetComponent<MeshCollider>().sharedMesh = mesh;
 
 #pragma warning disable 0162
-		if (CREATE_LINE)
+		if (LINE_DRAWING != ELineDrawing.None)
 		{
 			var ri = 0;
 			foreach (var ring_vertices in poly_vertices)
 			{
-				var line_object = createLinesFromPolygonData(ring_vertices, ri);
+				var line_object = createLinesFromPolygonData(ring_vertices, ri, shader);
 				line_object.transform.parent = go.transform;
+
+				// disable unselected lines
+				if (LINE_DRAWING == ELineDrawing.SelectedOnly)
+				{
+					line_object.SetActive(false);
+				}
 				++ri;
 			}
 		}
@@ -226,7 +239,7 @@ class CityLayoutMesh
 		return go;
 	}
 
-	public static GameObject createLinesFromPolygonData(Vector2[] ring_vertices, int ring_index)
+	public static GameObject createLinesFromPolygonData(Vector2[] ring_vertices, int ring_index, Shader shader)
 	{
 		var name = "line_" + ring_index.ToString();
 		var go = new GameObject(name);
@@ -235,12 +248,11 @@ class CityLayoutMesh
 		var vxs3d = System.Array.ConvertAll<Vector2, Vector3>(ring_vertices, v => new Vector3(v.x, -0.01f, v.y));
 		lrenderer.positionCount = vxs3d.Length;
 		lrenderer.SetPositions(vxs3d);
-		lrenderer.startWidth = LINE_WIDTH;
-		lrenderer.endWidth = LINE_WIDTH;
+		lrenderer.startWidth = LINE_WIDTH_DEFAULT;
+		lrenderer.endWidth = LINE_WIDTH_DEFAULT;
 		lrenderer.loop = true;
 		lrenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-		var s = Shader.Find("Standard");
-		lrenderer.material = new Material(s);
+		lrenderer.material = new Material(shader);
 		return go;
 	}
 
@@ -253,6 +265,8 @@ class CityLayoutMesh
 
 		Color region_color;
 		Color line_color;
+		float line_width = LINE_WIDTH_DEFAULT;
+
 		switch (state)
 		{
 			case PickingState.Picking:
@@ -263,6 +277,7 @@ class CityLayoutMesh
 			case PickingState.Selected:
 				region_color = colorSelected;
 				line_color = colorSelectedLine;
+				line_width = LINE_WIDTH_SELECTED;
 				break;
 
 			case PickingState.Normal:
@@ -275,12 +290,24 @@ class CityLayoutMesh
 		go.GetComponent<MeshRenderer>().material.color = region_color;
 
 #pragma warning disable 0162
-		if (CREATE_LINE)
+		if (LINE_DRAWING != ELineDrawing.None)
 		{
 			for (int i = 0; i < go.transform.childCount; ++i)
 			{
-				var line_object = go.transform.GetChild(0).gameObject;
-				line_object.GetComponent<LineRenderer>().material.color = line_color;
+				var line_object = go.transform.GetChild(i).gameObject;
+
+				// selected only: enable only if selected
+				if (LINE_DRAWING == ELineDrawing.SelectedOnly)
+				{
+
+					line_object.SetActive(state == PickingState.Selected);
+				}
+
+				// update light
+				var line_renderer = line_object.GetComponent<LineRenderer>();
+				line_renderer.material.color = line_color;
+				line_renderer.startWidth = line_width;
+				line_renderer.endWidth = line_width;
 			}
 		}
 #pragma warning restore 0162

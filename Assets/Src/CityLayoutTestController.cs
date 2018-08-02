@@ -10,6 +10,20 @@ public class CityLayoutTestController : MonoBehaviour {
 	private List<GameObject> tiles;
 
 	public readonly float BOX_RADIUS = 50;
+	private readonly bool enable_lighting = true;
+
+	private void Awake()
+	{
+		if (!enable_lighting)
+		{
+			// set ambient to black
+			RenderSettings.ambientLight = Color.black;
+
+			// disable scene lights
+			var lights = FindObjectsOfType<Light>();
+			foreach (var light in lights) { light.enabled = false; }
+		}
+	}
 
 	// Use this for initialization
 	void Start () {
@@ -45,8 +59,9 @@ public class CityLayoutTestController : MonoBehaviour {
 
 		// create mesh
 		var tile = CityLayoutMesh.createMeshFromPolygonData(
-			new Tuple<List<Vector2[]>, string>(new List<Vector2[]> { vxs }, 
-			"<square>"));
+			new Tuple<List<Vector2[]>, string>
+				(new List<Vector2[]> { vxs }, "<square>"),
+			enable_lighting);
 
 		// add locally
 		tiles = new List<GameObject>(1);
@@ -73,7 +88,7 @@ public class CityLayoutTestController : MonoBehaviour {
 		foreach (var polygon_data in polygon_dataset)
 		{
 			GameObject tile;
-			tile = CityLayoutMesh.createMeshFromPolygonData(polygon_data);
+			tile = CityLayoutMesh.createMeshFromPolygonData(polygon_data, enable_lighting);
 			tile.transform.parent = transform;
 			tiles.Add(tile);
 
