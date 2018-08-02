@@ -13,7 +13,7 @@ using ShapeColors = System.Tuple<
 						UnityEngine.Color
 						>;
 
-class CityLayoutMesh
+class MeshModel
 {
 	// line drawing config
 	private const float LINE_WIDTH_DEFAULT = 2f;

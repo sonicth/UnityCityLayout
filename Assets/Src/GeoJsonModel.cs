@@ -27,7 +27,7 @@ namespace Fish
 	using Properties = System.Collections.Generic.Dictionary<string, System.Object>;
 }
 
-public class GeoJson
+public class GeoJsonModel
 {
 
 	enum PolygonsWithHoles { All, WithHolesOnly, WithoutHolesOnly };
@@ -43,7 +43,7 @@ public class GeoJson
 		var geo_features = JsonConvert.DeserializeObject<FeatureCollection>(seralised_geometry);
 
 		// train boundary
-		var fit_box = new FitBox(box_radius);
+		var fit_box = new BoxMapping(box_radius);
 		foreach (var vx in IteratorFeatureOuterVxs(geo_features.Features))
 		{
 			fit_box.UpdateWithVertex(vx);

@@ -4,7 +4,7 @@ using UnityEngine;
 using System;
 using System.Linq;
 
-public class CityLayoutTestController : MonoBehaviour {
+public class SceneController : MonoBehaviour {
 
 	private List<GameObject> shapes;
 
@@ -46,7 +46,7 @@ public class CityLayoutTestController : MonoBehaviour {
 
 		var go = new GameObject("<test_square>");
 		// create mesh
-		CityLayoutMesh.createMeshFromPolygonData(go, new List<Vector2[]> { vxs }, enable_lighting);
+		MeshModel.createMeshFromPolygonData(go, new List<Vector2[]> { vxs }, enable_lighting);
 
 		// add locally
 		shapes = new List<GameObject>(1);
@@ -57,10 +57,10 @@ public class CityLayoutTestController : MonoBehaviour {
 	IEnumerator AddGeoJsonGeometry()
 	{
 		// 1) get serialised textual geometry data (e.g. read from file)
-		var seralised_geometry = CityLayoutModel.GetSerialisedGeometry();
+		var seralised_geometry = InputModel.GetSerialisedGeometry();
 
 		// 2) read serialised geometry (e.g. GeoJson) into list/collection of Vector2[]
-		var polygon_dataset = GeoJson.GetPolygonDatasetFromSerialised(seralised_geometry, BOX_RADIUS);
+		var polygon_dataset = GeoJsonModel.GetPolygonDatasetFromSerialised(seralised_geometry, BOX_RADIUS);
 		yield return null;
 
 		// 3) create GameObjects with meshes from each polygon
@@ -77,7 +77,7 @@ public class CityLayoutTestController : MonoBehaviour {
 			shape_properties.PropertiesDict = polygon_data.Item2;
 
 			// create gameobject including the mesh
-			CityLayoutMesh.createMeshFromPolygonData(shape, polygon_data.Item1, enable_lighting);
+			MeshModel.createMeshFromPolygonData(shape, polygon_data.Item1, enable_lighting);
 
 			shape.transform.parent = transform;
 			shapes.Add(shape);
@@ -100,11 +100,11 @@ public class CityLayoutTestController : MonoBehaviour {
 		foreach(var shape_go in shapes)
 		{
 			if (shape_go == cam_controller.Selected)
-				CityLayoutMesh.updateShapeLines(shape_go, CityLayoutMesh.PickingState.Selected, pix_to_world_scale);
+				MeshModel.updateShapeLines(shape_go, MeshModel.PickingState.Selected, pix_to_world_scale);
 			else if (shape_go == cam_controller.Picked)
-				CityLayoutMesh.updateShapeLines(shape_go, CityLayoutMesh.PickingState.Picking, pix_to_world_scale);
+				MeshModel.updateShapeLines(shape_go, MeshModel.PickingState.Picking, pix_to_world_scale);
 			else
-				CityLayoutMesh.updateShapeLines(shape_go, CityLayoutMesh.PickingState.Normal, pix_to_world_scale);
+				MeshModel.updateShapeLines(shape_go, MeshModel.PickingState.Normal, pix_to_world_scale);
 		}
 
 		yield return null;
@@ -114,7 +114,7 @@ public class CityLayoutTestController : MonoBehaviour {
 	{
 		foreach (var shape_go in shapes)
 		{
-			CityLayoutMesh.highlightShape(shape_go, CityLayoutMesh.PickingState.Normal, pix_to_world_scale);
+			MeshModel.highlightShape(shape_go, MeshModel.PickingState.Normal, pix_to_world_scale);
 			//CityLayoutMesh.updateShapeLines(tile_go, CityLayoutMesh.PickingState.Normal, pix_to_world_scale);
 		}
 

@@ -1,5 +1,5 @@
 ﻿
-class CityLayoutModel
+class InputModel
 {
 	public static string GetSerialisedGeometry()
 	{

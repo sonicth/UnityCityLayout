@@ -32,7 +32,7 @@ public class CameraController : MonoBehaviour
 	private GameObject selected = null;
 
 
-	public CityLayoutTestController scene_controller = null;
+	public SceneController scene_controller = null;
 
 	// Scale from pixels to world
 	public float PixToWorld = 0;
@@ -142,11 +142,11 @@ public class CameraController : MonoBehaviour
 			{
 				// de-select any existing object
 				if (selected)
-					CityLayoutMesh.highlightShape(selected, CityLayoutMesh.PickingState.Normal, PixToWorld);
+					MeshModel.highlightShape(selected, MeshModel.PickingState.Normal, PixToWorld);
 
 				// select the curently picked object
 				selected = picked;
-				CityLayoutMesh.highlightShape(selected, CityLayoutMesh.PickingState.Selected, PixToWorld);
+				MeshModel.highlightShape(selected, MeshModel.PickingState.Selected, PixToWorld);
 
 				// TODO do something after the object has been selected!
 				Debug.Log("selected object with properties: " + selected.GetComponent<ShapeProperties>().ToString());
@@ -156,7 +156,7 @@ public class CameraController : MonoBehaviour
 				if (selected)
 				{
 					// deselect object
-					CityLayoutMesh.highlightShape(selected, CityLayoutMesh.PickingState.Normal, PixToWorld);
+					MeshModel.highlightShape(selected, MeshModel.PickingState.Normal, PixToWorld);
 					selected = null;
 					
 				}
@@ -193,7 +193,7 @@ public class CameraController : MonoBehaviour
 
 				// highligh (select) picked object
 				if (picked != selected)
-					CityLayoutMesh.highlightShape(picked, CityLayoutMesh.PickingState.Picking, PixToWorld);
+					MeshModel.highlightShape(picked, MeshModel.PickingState.Picking, PixToWorld);
 			}
 			//else { Debug.Log("**same object hit!"); }
 		}
@@ -211,7 +211,7 @@ public class CameraController : MonoBehaviour
 		if (to_unpick)
 		{
 			if (to_unpick != selected)
-				CityLayoutMesh.highlightShape(to_unpick, CityLayoutMesh.PickingState.Normal, PixToWorld);
+				MeshModel.highlightShape(to_unpick, MeshModel.PickingState.Normal, PixToWorld);
 
 			to_unpick = null;
 		}
