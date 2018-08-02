@@ -75,6 +75,8 @@ public class SceneController : MonoBehaviour {
 			// set shape properties
 			var shape_properties = shape.AddComponent<ShapeProperties>();
 			shape_properties.PropertiesDict = polygon_data.Item2;
+			// can get the name ONLY after dictionary is set
+			shape.name = shape_properties.Name;
 
 			// create gameobject including the mesh
 			MeshModel.createMeshFromPolygonData(shape, polygon_data.Item1, enable_lighting);

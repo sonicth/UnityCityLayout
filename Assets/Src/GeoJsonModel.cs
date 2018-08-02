@@ -22,10 +22,6 @@ using PolygonInput = System.Tuple<
 						GeoJSON.Net.Geometry.Polygon,
 						System.Collections.Generic.Dictionary<string, System.Object>>;
 
-namespace Fish
-{
-	using Properties = System.Collections.Generic.Dictionary<string, System.Object>;
-}
 
 public class GeoJsonModel
 {

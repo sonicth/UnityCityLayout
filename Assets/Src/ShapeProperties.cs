@@ -4,10 +4,7 @@ using UnityEngine;
 
 public class ShapeProperties : MonoBehaviour {
 
-
 	private Dictionary<string, object> _properties;
-	//private int polygon_idx = -1;
-
 
 	// Use this for initialization
 	void Start () {
@@ -45,6 +42,7 @@ public class ShapeProperties : MonoBehaviour {
 		}
 	}
 
+	// NOTE temporary method
 	public override string ToString()
 	{
 		string props_serialised = "";
