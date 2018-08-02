@@ -35,6 +35,8 @@ public class CameraController : MonoBehaviour
 	{
 		var cams = GetComponentsInChildren<Camera>();
 		cam = cams[0];
+
+		updatePixToWorldScale();
 	}
 
 	void Update()
@@ -195,11 +197,12 @@ public class CameraController : MonoBehaviour
 		// Determine how much to move the camera
 		var pan_change = lastPanPosition - newPanPosition;
 
-		// convert to screen to viewport, e.g. for hd: [0, 1920]x[0, 1080] --> [0, 1]x[0, 1]
-		Vector3 offset = cam.ScreenToViewportPoint(pan_change);
+		// update screen to world scale
+		// NOTE this needed (besides the update at the start and during a zoom event) since screen resolution listener is too complex
+		updatePixToWorldScale();
 
-		// convert viewport to world; since ortho camera height is half of the world, scale x appropriately
-		offset = Vector3.Scale(offset, new Vector3(cam.aspect, 1.0f, 0) * cam.orthographicSize * 2);
+		// convert to screen change to world change
+		Vector3 offset = pan_change * _pix_to_world;
 
 		//var offset = pan_change;
 		Vector3 move = new Vector3(offset.x * PanSpeed, 0, offset.y * PanSpeed);
@@ -218,6 +221,13 @@ public class CameraController : MonoBehaviour
 		lastPanPosition = newPanPosition;
 	}
 
+	private float _pix_to_world = 0;
+	private void updatePixToWorldScale()
+	{
+		_pix_to_world =  2 * cam.orthographicSize / (float)Screen.height;
+	}
+
+
 	void ZoomCamera(float offset, float speed)
 	{
 		if (offset == 0)
@@ -227,6 +237,9 @@ public class CameraController : MonoBehaviour
 
 		var size_change = speed * (cam.orthographicSize / ZoomBounds[1]);
 		cam.orthographicSize = Mathf.Clamp(cam.orthographicSize - (offset * size_change), ZoomBounds[0], ZoomBounds[1]);
+		updatePixToWorldScale();
+
+		// DONT care for perspective!
 		//cam.fieldOfView = Mathf.Clamp(cam.fieldOfView - (offset * speed), ZoomBounds[0], ZoomBounds[1]);
 	}
 }
