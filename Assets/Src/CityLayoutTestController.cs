@@ -9,7 +9,6 @@ public class CityLayoutTestController : MonoBehaviour {
 	int updates = 0;
 	private List<GameObject> tiles;
 
-	public readonly bool DRAW_LINES = false;
 	public readonly float BOX_RADIUS = 50;
 
 	// Use this for initialization
@@ -26,7 +25,7 @@ public class CityLayoutTestController : MonoBehaviour {
 	void Update () {
 		++updates;
 
-		if (updates > 1000)
+		if (updates > 10000)
 		{
 #if UNITY_EDITOR
 			// Application.Quit() does not work in the editor so
@@ -74,14 +73,7 @@ public class CityLayoutTestController : MonoBehaviour {
 		foreach (var polygon_data in polygon_dataset)
 		{
 			GameObject tile;
-			if (DRAW_LINES)
-			{
-				tile = CityLayoutMesh.createLinesFromPolygonData(polygon_data);
-			}
-			else
-			{
-				tile = CityLayoutMesh.createMeshFromPolygonData(polygon_data);
-			}
+			tile = CityLayoutMesh.createMeshFromPolygonData(polygon_data);
 			tile.transform.parent = transform;
 			tiles.Add(tile);
 

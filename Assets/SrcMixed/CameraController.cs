@@ -8,12 +8,12 @@ public class CameraController : MonoBehaviour
 {
 
 	private static readonly float PanSpeed = 100f;
-	private static readonly float ZoomSpeedTouch = 0.1f;
+	private static readonly float ZoomSpeedTouch = 2.0f;
 	private static readonly float ZoomSpeedMouse = 50.0f;
 
-	private static readonly float[] BoundsX = new float[] { -50f, 50f };
+	public static readonly float bound_x = 50f;
 	private static readonly float[] BoundsZ = new float[] { -50f, 50f };
-	private static readonly float[] ZoomBounds = new float[] { 10f, 285f };
+	private static readonly float[] ZoomBounds = new float[] { 1f, 50f };
 
 	private Camera cam;
 
@@ -119,14 +119,21 @@ public class CameraController : MonoBehaviour
 				//TODO
 				// select object
 				Debug.LogFormat("TODO select picked object <{0}>", picked.name);
+
+				if (selected)
+					CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Normal);
+
 				selected = picked;
+				CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Selected);
 			}
 			else
 			{
 				if (selected)
 				{
 					Debug.LogFormat("de-select object <{0}>", selected.name);
+					CityLayoutMesh.highlightMesh(selected, CityLayoutMesh.PickingState.Normal);
 					selected = null;
+					
 				}
 				else
 					Debug.Log("noting selected!");
@@ -162,7 +169,8 @@ public class CameraController : MonoBehaviour
 				picked = hit.collider.gameObject;
 
 				// highligh (select) picked object
-				CityLayoutMesh.highlightMesh(picked, true);
+				if (picked != selected)
+					CityLayoutMesh.highlightMesh(picked, CityLayoutMesh.PickingState.Picking);
 			}
 			//else { Debug.Log("**same object hit!"); }
 		}
@@ -179,7 +187,9 @@ public class CameraController : MonoBehaviour
 
 		if (to_unpick)
 		{
-			CityLayoutMesh.highlightMesh(to_unpick, false);
+			if (to_unpick != selected)
+				CityLayoutMesh.highlightMesh(to_unpick, CityLayoutMesh.PickingState.Normal);
+
 			to_unpick = null;
 		}
 	}
@@ -195,7 +205,7 @@ public class CameraController : MonoBehaviour
 
 		// Ensure the camera remains within bounds.
 		Vector3 pos = transform.position;
-		pos.x = Mathf.Clamp(transform.position.x, BoundsX[0], BoundsX[1]);
+		pos.x = Mathf.Clamp(transform.position.x, -bound_x, bound_x);
 		pos.z = Mathf.Clamp(transform.position.z, BoundsZ[0], BoundsZ[1]);
 
 		transform.position = pos;
@@ -211,7 +221,8 @@ public class CameraController : MonoBehaviour
 			return;
 		}
 
-		cam.orthographicSize = Mathf.Clamp(cam.orthographicSize - (offset * speed), ZoomBounds[0], ZoomBounds[1]);
+		var size_change = speed * (cam.orthographicSize / ZoomBounds[1]);
+		cam.orthographicSize = Mathf.Clamp(cam.orthographicSize - (offset * size_change), ZoomBounds[0], ZoomBounds[1]);
 		//cam.fieldOfView = Mathf.Clamp(cam.fieldOfView - (offset * speed), ZoomBounds[0], ZoomBounds[1]);
 	}
 }

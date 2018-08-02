@@ -10,6 +10,19 @@ using PolygonData = System.Tuple<
 class CityLayoutMesh
 {
 	private const float LINE_WIDTH = 0.25f;
+	private const bool CREATE_LINE = true;
+
+	public static readonly Color colorDefault = new Color(0.0452f, 0.6376f, 0.0613f);
+	public static readonly Color colorDefaultLine = new Color(0.1f, 0.1f, 0.1f);
+
+	public static readonly Color colorPicking = colorDefault + new Color(0.2f, 0.2f, 0.2f);
+	public static readonly Color colorPickingLine = colorDefaultLine + new Color(0.2f, 0.2f, 0.2f);
+
+	public static readonly Color colorSelected = new Color(0.3419f, 0.1384f, 0.0168f);
+	public static readonly Color colorSelectedLine = new Color(1, 0, 0);
+
+
+	public enum PickingState { Normal, Picking, Selected };
 
 	private static Mesh GetTriangleMeshBasic(Vector2[] vxs)
 	{
@@ -187,6 +200,7 @@ class CityLayoutMesh
 
 		var s = Shader.Find("Standard");
 		go.GetComponent<MeshRenderer>().material = new Material(s);
+		
 		// tilt to xz plane
 		go.transform.rotation = Quaternion.Euler(90, 0, 0);
 
@@ -194,47 +208,84 @@ class CityLayoutMesh
 		//NOTE needs to be last, EVEN after transforms!
 		go.GetComponent<MeshCollider>().sharedMesh = mesh;
 
+#pragma warning disable 0162
+		if (CREATE_LINE)
+		{
+			var ri = 0;
+			foreach (var ring_vertices in poly_vertices)
+			{
+				var line_object = createLinesFromPolygonData(ring_vertices, ri);
+				line_object.transform.parent = go.transform;
+				++ri;
+			}
+		}
+#pragma warning restore 0162
+
+		highlightMesh(go, PickingState.Normal);
+
 		return go;
 	}
 
-	public static GameObject createLinesFromPolygonData(PolygonData poly_data)
+	public static GameObject createLinesFromPolygonData(Vector2[] ring_vertices, int ring_index)
 	{
-		var poly_vertices = poly_data.Item1;
-		var poly_name = poly_data.Item2;
-
-		var go = new GameObject(poly_name);
+		var name = "line_" + ring_index.ToString();
+		var go = new GameObject(name);
 		var lrenderer = go.AddComponent<LineRenderer>();
-
-		var vxs3d = System.Array.ConvertAll<Vector2, Vector3>(poly_vertices[0], v => new Vector3(v.x, 0, v.y));
+		//TODO reverse vertices
+		var vxs3d = System.Array.ConvertAll<Vector2, Vector3>(ring_vertices, v => new Vector3(v.x, -0.01f, v.y));
 		lrenderer.positionCount = vxs3d.Length;
 		lrenderer.SetPositions(vxs3d);
 		lrenderer.startWidth = LINE_WIDTH;
 		lrenderer.endWidth = LINE_WIDTH;
-
+		lrenderer.loop = true;
+		lrenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 		var s = Shader.Find("Standard");
 		lrenderer.material = new Material(s);
-		// tilt to xz plane
-		go.transform.rotation = Quaternion.Euler(90, 0, 0);
-
-
 		return go;
 	}
 
-	public static void highlightMesh(GameObject go, bool is_selected)
+
+
+	public static void highlightMesh(GameObject go, PickingState state)
 	{
 		//Debug.LogFormat("{1} object <{0}>", go.name, is_selected ? "highligting" : "de-selecting");
-
-		var mat = go.GetComponent<MeshRenderer>().material;
-		if (is_selected)
-		{
-			mat.color = new Color(0.9f, 0.5f, 0.6f);
-		}
-		else
-		{
-			mat.color = new Color(1, 1, 1);
-		}
-
 		
+
+		Color region_color;
+		Color line_color;
+		switch (state)
+		{
+			case PickingState.Picking:
+				region_color = colorPicking;
+				line_color = colorPickingLine;
+				break;
+
+			case PickingState.Selected:
+				region_color = colorSelected;
+				line_color = colorSelectedLine;
+				break;
+
+			case PickingState.Normal:
+			default:
+				region_color = colorDefault;
+				line_color = colorDefaultLine;
+				break;
+		}
+
+		go.GetComponent<MeshRenderer>().material.color = region_color;
+
+#pragma warning disable 0162
+		if (CREATE_LINE)
+		{
+			for (int i = 0; i < go.transform.childCount; ++i)
+			{
+				var line_object = go.transform.GetChild(0).gameObject;
+				line_object.GetComponent<LineRenderer>().material.color = line_color;
+			}
+		}
+#pragma warning restore 0162
 	}
+
+
 }
 

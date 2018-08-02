@@ -26,7 +26,8 @@ public class GeoJson
 
 	enum PolygonsWithHoles { All, WithHolesOnly, WithoutHolesOnly };
 
-	private const int MAX_FEATURES_TO_READ = 400000;
+	//private const int MAX_FEATURES_TO_READ = 400000;
+	private const int MAX_FEATURES_TO_READ = 400;
 	private const PolygonsWithHoles loadWithHoles = PolygonsWithHoles.All;
 	private const bool discardHoles = false;
 
@@ -62,20 +63,14 @@ public class GeoJson
 		return polygon_dataset;
 	}
 
-	readonly static bool STRIP_LAST_RING_VERTEX = false;
 
 	static private Vector2[] RingVectors(LineString ring)
 	{
 		var ring_vectors = new Vector2[ring.Coordinates.Count];
 
 		int i = 0;
-		var last_i = ring.Coordinates.Count - 1;
 		foreach (var coord in ring.Coordinates)
 		{
-			// eat last vertex since the polygon is 'closed' automatically 
-			if (i == last_i && STRIP_LAST_RING_VERTEX)
-				break;
-
 			ring_vectors[i] = new Vector2((float)coord.Longitude, (float)coord.Latitude);
 			++i;
 		}
