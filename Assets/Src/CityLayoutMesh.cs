@@ -6,7 +6,7 @@ using UnityEngine;
 //TODO share with others!
 using PolygonData = System.Tuple<
 						System.Collections.Generic.List<UnityEngine.Vector2[]>,
-						string>;
+						ShapeProperties>;
 
 using ShapeColors = System.Tuple<
 						UnityEngine.Color,
@@ -182,12 +182,8 @@ class CityLayoutMesh
 
 	}
 
-	public static GameObject createMeshFromPolygonData(PolygonData poly_data, bool enable_lighting)
+	public static void createMeshFromPolygonData(GameObject go, List<Vector2[]> poly_vertices, bool enable_lighting)
 	{
-		var poly_vertices = poly_data.Item1;
-		var poly_name = poly_data.Item2;
-
-		var go = new GameObject(poly_name);
 		go.AddComponent<MeshFilter>();
 		go.AddComponent<MeshRenderer>();
 		// collider for raycasting
@@ -202,7 +198,7 @@ class CityLayoutMesh
 			mesh = GetTriangleDotNetMesh(poly_vertices);
 		} catch(System.SystemException e)
 		{
-			Debug.LogWarning("p2t failed on mesh: " + poly_name + ", \n\tmessage: ###"+e.Message + "###");
+			Debug.LogWarning("p2t failed on mesh: " + go.name + ", \n\tmessage: ###"+e.Message + "###");
 			mesh = GetTriangleMeshBasic(poly_vertices[0]);
 		}
 		go.GetComponent<MeshFilter>().mesh = mesh;
@@ -233,7 +229,6 @@ class CityLayoutMesh
 			}
 		}
 #pragma warning restore 0162
-		return go;
 	}
 
 	public static GameObject createLinesFromPolygonData(Vector2[] ring_vertices, int ring_index, Shader shader)

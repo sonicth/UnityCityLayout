@@ -220,6 +220,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51eb8755a10d5564f82482948c88ad15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  scene_controller: {fileID: 0}
+  PixToWorld: 0
 --- !u!1 &534669902
 GameObject:
   m_ObjectHideFlags: 0

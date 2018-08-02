@@ -12,14 +12,20 @@ using Newtonsoft.Json.Linq;
 using GeoJSON.Net.Feature;
 using GeoJSON.Net.Geometry;
 
+
 //TODO share with others
 using PolygonData = System.Tuple<
 					System.Collections.Generic.List<UnityEngine.Vector2[]>,
-					string>;
+					System.Collections.Generic.Dictionary<string, System.Object>>;
 
 using PolygonInput = System.Tuple<
-						GeoJSON.Net.Geometry.Polygon, 
-						string>;
+						GeoJSON.Net.Geometry.Polygon,
+						System.Collections.Generic.Dictionary<string, System.Object>>;
+
+namespace Fish
+{
+	using Properties = System.Collections.Generic.Dictionary<string, System.Object>;
+}
 
 public class GeoJson
 {
@@ -100,7 +106,7 @@ public class GeoJson
 			// first linestring == outer ring?
 			var num_rings = poly_input.Item1.Coordinates.Count;
 			var poly_vectors = new List<Vector2[]>(num_rings);
-			var poly_name = poly_input.Item2;
+			var shape_properties = poly_input.Item2;
 
 			int ri = 0;
 			foreach (var ring in poly_input.Item1.Coordinates)
@@ -113,7 +119,7 @@ public class GeoJson
 				++ri;
 			}
 			
-			yield return new PolygonData(poly_vectors, poly_name);
+			yield return new PolygonData(poly_vectors, shape_properties);
 		}
 	}
 
@@ -131,9 +137,6 @@ public class GeoJson
 				// shape represented with multipolygon
 				var mpoly = (f.Geometry as MultiPolygon);
 
-				// game object name
-				string mpoly_name = "shape_" + i.ToString("D6") + "_" + f.Properties["LU_DESC"] + "_" + f.Properties["OID_"];
-
 				int pi = 0;
 				foreach (var poly in mpoly.Coordinates)
 				{
@@ -144,11 +147,7 @@ public class GeoJson
 						|| (!are_holes && loadWithHoles == PolygonsWithHoles.WithHolesOnly))
 						continue;
 #pragma warning restore 0162
-
-					// if there are multiple polygons in the set, add index prefix starting from the second one
-					var poly_name = mpoly_name + (pi > 0 ? "_" + pi.ToString("D2") : "");
-
-					yield return new PolygonInput(poly, poly_name);
+					yield return new PolygonInput(poly, f.Properties);
 					++pi;
 				}
 
@@ -157,12 +156,9 @@ public class GeoJson
 			// NOTE a single polygon feature for debugging purposes; normally expect only multipolygons in the input.
 			else if (f.Geometry.Type == GeoJSON.Net.GeoJSONObjectType.Polygon)
 			{
-				var poly = (f.Geometry as Polygon);				
-				string poly_name = f.Properties.ContainsKey("name") 
-					? ("polygon: " + f.Properties["name"]) 
-					: "<polygon>";
+				var poly = (f.Geometry as Polygon);
 
-				yield return new PolygonInput(poly, poly_name);
+				yield return new PolygonInput(poly, f.Properties);
 			}
 			else
 			{
@@ -175,7 +171,7 @@ public class GeoJson
 	}
 
 	//
-	// debug stuff
+	// Debug
 	//
 	private void writeGJ(string put_path, FeatureCollection geo_features)
 	{
@@ -199,9 +195,8 @@ public class GeoJson
 
 
 	//
-	///  test stuff
+	// Test
 	//
-
 	public static void TestConversion()
 	{
 		var offset = 0;

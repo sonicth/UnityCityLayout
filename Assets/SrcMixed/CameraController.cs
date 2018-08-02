@@ -147,6 +147,9 @@ public class CameraController : MonoBehaviour
 				// select the curently picked object
 				selected = picked;
 				CityLayoutMesh.highlightShape(selected, CityLayoutMesh.PickingState.Selected, PixToWorld);
+
+				// TODO do something after the object has been selected!
+				Debug.Log("selected object with properties: " + selected.GetComponent<ShapeProperties>().ToString());
 			}
 			else
 			{

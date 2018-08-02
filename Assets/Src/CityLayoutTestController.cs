@@ -6,7 +6,6 @@ using System.Linq;
 
 public class CityLayoutTestController : MonoBehaviour {
 
-	int updates = 0;
 	private List<GameObject> shapes;
 
 	public readonly float BOX_RADIUS = 50;
@@ -31,26 +30,11 @@ public class CityLayoutTestController : MonoBehaviour {
 		cam_controller = FindObjectOfType<CameraController>();
 		cam_controller.scene_controller = this;
 
-		// start reading gometry
+		// start reading geometry
 		StartCoroutine("AddGeoJsonGeometry", this);
 	}
 
-
-
-	// Update is called once per frame
 	void Update () {
-		++updates;
-
-		if (updates > 10000)
-		{
-#if UNITY_EDITOR
-			// Application.Quit() does not work in the editor so
-			// UnityEditor.EditorApplication.isPlaying need to be set to false to end the game
-			UnityEditor.EditorApplication.isPlaying = false;
-#else
-			Application.Quit();
-#endif
-		}
 	}
 
 	void AddSquareTest()
@@ -59,20 +43,16 @@ public class CityLayoutTestController : MonoBehaviour {
 		var r = BOX_RADIUS * 0.5f;
 		var vxs = new Vector2[] { new Vector3(0, 0), new Vector3(0, r), new Vector3(r, r), new Vector3(r, 0) };
 
+
+		var go = new GameObject("<test_square>");
 		// create mesh
-		var tile = CityLayoutMesh.createMeshFromPolygonData(
-			new Tuple<List<Vector2[]>, string>
-				(new List<Vector2[]> { vxs }, 
-				"<square>"),
-			enable_lighting);
+		CityLayoutMesh.createMeshFromPolygonData(go, new List<Vector2[]> { vxs }, enable_lighting);
 
 		// add locally
 		shapes = new List<GameObject>(1);
-		tile.transform.parent = transform;
-		shapes.Add(tile);
+		go.transform.parent = transform;
+		shapes.Add(go);
 	}
-
-
 
 	IEnumerator AddGeoJsonGeometry()
 	{
@@ -90,10 +70,17 @@ public class CityLayoutTestController : MonoBehaviour {
 		const int UNITS_PER_YIELD = 64;
 		foreach (var polygon_data in polygon_dataset)
 		{
-			GameObject tile;
-			tile = CityLayoutMesh.createMeshFromPolygonData(polygon_data, enable_lighting);
-			tile.transform.parent = transform;
-			shapes.Add(tile);
+			var shape = new GameObject();
+
+			// set shape properties
+			var shape_properties = shape.AddComponent<ShapeProperties>();
+			shape_properties.PropertiesDict = polygon_data.Item2;
+
+			// create gameobject including the mesh
+			CityLayoutMesh.createMeshFromPolygonData(shape, polygon_data.Item1, enable_lighting);
+
+			shape.transform.parent = transform;
+			shapes.Add(shape);
 
 			++yield_counter;
 			if (yield_counter >= UNITS_PER_YIELD)
