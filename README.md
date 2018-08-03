@@ -41,3 +41,14 @@ The GeoJson references Geo data, say in WGS 84 format, and it needs to be projec
 
 Currently, the coordinates (*Longitude* and *Lattitude*) are interpreted as spherical coordinates and are simply flattened out (mapped to *x* and *y* on the plane). Futhermore, coordinates are fitted into a *square* of a given size centered at the origin.
 
+### Mesh Processing and Rendering
+
+The Mesh model is used by Scene controller to convert geometric data into Unity scene objects, represented as `GameObject` instances. 
+
+Since Unity can only render triangles, a shape needs to be triangulated. To acomplish this, first I have tried the `Triangulator` class from the [Unity Wiki](http://wiki.unity3d.com/index.php/Triangulator), though it only works for the most basic polygons.
+I also have tried [*Poly2Tri*](https://github.com/greenm01/poly2tri) library, but even though it can handle some concave shapes, library fails for more complex geometry (probably because the work on this library is still in progress). This App uses the third library that was tested, [*Triangle.NET*](https://github.com/eppz/Triangle.NET), which correctly triangulates every polygon tested (with the exception of an occasional stack overflow), including the ones with holes. It is based on another [tool](http://www.cs.cmu.edu/~quake/triangle.html) and developed by Jonathan Shewchuk and written in C, which works by using a *Delaunay graph*.
+
+Polygon boundaries are rendered by creating additional `GameObject`s for each ring and adding `LineRenderer` component to each of them. Line width is rescaled each time the user zooms in or out.
+
+### Problems
+Line rendering results in a number of artefacts and I assume that Unity also triangulates the line. In the future, it would be interesting to try OpenGL line rendering.
