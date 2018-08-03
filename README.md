@@ -29,3 +29,10 @@ Functionality is divided among the following modules stored in separate files:
 
 6. **Camera controller**, responsible for interaction of user by taking mouse input. and navigation and selection within the scene. Once the Scene controller is finished loading of GameObjects, Camera controller is responsible any for functionality as the scene is being navigated by the user.
 
+### (GeoJson) Geometry Input
+
+GeoJson module processes text data into a Unity-compatible data structure. A GeoJson data file, which, for example, may represent a part of City Layout, rougly speaking, is organised as a list *Feature*s. A Feature represents a collection of polygons, *multipolygons*, which can relate to a particular object in a city. Polygon is represented as a list of rings or boundary loops, where the first ring is its *outer boundary* and other, optional, rings are *hole*s or *inner boundaries*. 
+
+[*GeoJson.NET*](https://github.com/ahokinson/GeoJson.NET-Unity) Unity port is used to parse the input, which is in turn based on [*Json.NET*](https://github.com/ahokinson/GeoJson.NET-Unity). The parsed data structure contains read-only features. This means that if we want to modify one vertex we need to regenerate the entire multipolygon during the conversion to JSON. This is probably not a big problem in case the App needs to be extended to write data out, since the update only needs to be performed once when the scene state needs to be saved (however currently this is not supported).
+
+
