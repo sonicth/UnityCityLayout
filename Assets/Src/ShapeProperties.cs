@@ -21,8 +21,8 @@ public class ShapeProperties : MonoBehaviour {
 		get
 		{
 			// polygon_idx.ToString("D6") + "_"
-			var desc = PropertiesDict["LU_DESC"] as string;
-			var object_id = PropertiesDict["OID_"].ToString();
+			var desc = PropertiesDict.ContainsKey("LU_DESC") ? PropertiesDict["LU_DESC"] as string : "";
+			var object_id = PropertiesDict.ContainsKey("OID_") ? PropertiesDict["OID_"].ToString() : "";
 			string mpoly_name = "shape_" + desc + "_" + object_id;
 			return mpoly_name;
 		}
