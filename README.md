@@ -35,4 +35,9 @@ GeoJson module processes text data into a Unity-compatible data structure. A Geo
 
 [*GeoJson.NET*](https://github.com/ahokinson/GeoJson.NET-Unity) Unity port is used to parse the input, which is in turn based on [*Json.NET*](https://github.com/ahokinson/GeoJson.NET-Unity). The parsed data structure contains read-only features. This means that if we want to modify one vertex we need to regenerate the entire multipolygon during the conversion to JSON. This is probably not a big problem in case the App needs to be extended to write data out, since the update only needs to be performed once when the scene state needs to be saved (however currently this is not supported).
 
+### Coordinate Mapping
+
+The GeoJson references Geo data, say in WGS 84 format, and it needs to be projected into a plane. 
+
+Currently, the coordinates (*Longitude* and *Lattitude*) are interpreted as spherical coordinates and are simply flattened out (mapped to *x* and *y* on the plane). Futhermore, coordinates are fitted into a *square* of a given size centered at the origin.
 
